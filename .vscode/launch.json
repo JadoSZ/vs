@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Run yfinance proxy",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/proxy-server/yfinance_api.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/proxy-server",
+      "env": {
+        "PYTHONUNBUFFERED": "1"
+      }
+    },
+    {
+      "name": "NPM: Vite dev",
+      "type": "pwa-node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [ "run", "dev", "--prefix", "${workspaceFolder}", "--", "--host", "127.0.0.1" ],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {}
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Run yfinance proxy + Vite",
+      "configurations": [ "Python: Run yfinance proxy", "NPM: Vite dev" ],
+      "stopAll": true
+    }
+  ]
+}
