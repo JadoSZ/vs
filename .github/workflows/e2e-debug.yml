@@ -1,0 +1,72 @@
+name: "E2E Debug: proxy startup"
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  debug-proxy:
+    name: Debug proxy container startup and gather logs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Pull python image
+        run: docker pull python:3.11
+
+      - name: Start proxy in container (detached) and capture logs
+        id: start
+        run: |
+          set -eux
+          # Run container, mounting repo so proxy-server runnable
+          docker run --name debug_proxy -d -p 5000:5000 \
+            --health-cmd "python -c 'import urllib.request; urllib.request.urlopen(\"http://127.0.0.1:5000/health\")'" \
+            --health-interval 5s --health-timeout 3s --health-retries 12 \
+            -e PYTHONUNBUFFERED=1 -e CI=true -v "$PWD":/workspace -w /workspace python:3.11 \
+            /bin/sh -c "pip install -q -r requirements.txt || true; python -u proxy-server/yfinance_api.py" || true
+
+          echo "Waiting for health checks (up to 120s):"
+          for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+            sleep 10
+            status=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{end}}' debug_proxy || true)
+            echo "health: $status"
+            docker logs --tail 200 debug_proxy || true
+            if [ "$status" = "healthy" ]; then
+              echo "container healthy"; break
+            fi
+          done
+
+      - name: Dump final container logs
+        run: |
+          echo "==== docker ps ===="
+          docker ps -a --filter name=debug_proxy || true
+          echo "==== inspect ===="
+          docker inspect debug_proxy || true
+          echo "==== last 200 lines of logs ===="
+          docker logs --tail 200 debug_proxy || true
+
+      - name: Upload logs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-proxy-debug-logs
+          path: |
+            $(pwd)/debug_proxy_logs.txt || true
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker logs --tail 500 debug_proxy > debug_proxy_full.log || true
+          docker rm -f debug_proxy || true
+          ls -la || true
+
+      - name: Upload full logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-proxy-full-logs
+          path: debug_proxy_full.log
