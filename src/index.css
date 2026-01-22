@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    font-family: Roboto, system-ui, -apple-system, 'Segoe UI', 'Helvetica Neue', Arial;
+  }
+  body {
+    @apply bg-gray-950 text-gray-200;
+  }
+}
+
+/* Utility card class */
+.card {
+  @apply bg-gray-900 border border-gray-800 rounded-lg shadow-md p-4;
+}
+
+.btn-primary {
+  @apply bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-md transition-all transform hover:scale-105;
+}
+
